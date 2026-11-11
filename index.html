@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAKSHIT OTT - Stream Movies & TV Shows</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{brand:'#E50914',darkBg:'#0F0F12',cardBg:'#18181C',navBg:'#09090B'}}}}</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Inter',sans-serif;background:#0F0F12;color:#fff;-webkit-font-smoothing:antialiased}
+html,body{overflow-x:hidden;width:100%;margin:0}
+::-webkit-scrollbar{height:6px;width:6px}::-webkit-scrollbar-track{background:#0F0F12}::-webkit-scrollbar-thumb{background:#27272A;border-radius:4px}
+.tv-focusable:focus{outline:3px solid #E50914!important;outline-offset:3px;transform:scale(1.04);box-shadow:0 0 15px rgba(229,9,20,.6);transition:all .15s}
+.aspect-contain{object-fit:contain!important;width:100%!important;height:100%!important}
+.aspect-cover{object-fit:cover!important;width:100%!important;height:100%!important}
+.aspect-16-9{aspect-ratio:16/9!important;object-fit:fill!important;width:100%!important}
+.aspect-4-3{aspect-ratio:4/3!important;object-fit:fill!important;height:100%!important}
+.aspect-21-9{aspect-ratio:21/9!important;object-fit:fill!important;width:100%!important}
+.aspect-stretch{object-fit:fill!important;width:100%!important;height:100%!important}
+.inp{width:100%;background:#09090B;border:1px solid #27272A;border-radius:.6rem;padding:.55rem .75rem;font-size:.8rem;color:#fff;outline:none}
+.inp:focus{border-color:#E50914}
+</style>
+</head>
+<body class="min-h-screen flex flex-col bg-darkBg text-white w-full">
+
+<!-- ADMIN SIDEBAR (sirf admin login ke baad dikhega) -->
+<aside id="adminPanel" class="hidden fixed left-0 top-16 bottom-0 z-30 w-56 bg-navBg border-r border-gray-800 p-4 space-y-3">
+  <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Admin Panel</p>
+  <button onclick="openUpload()" class="tv-focusable w-full bg-brand hover:bg-red-700 text-white text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Movie</button>
+  <button onclick="openEdit()" class="tv-focusable w-full bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-2"><i class="fa-solid fa-pen-to-square"></i> Edit Movie</button>
+  <button onclick="adminLogout()" class="tv-focusable w-full bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-2"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+</aside>
+
+<header class="sticky top-0 z-40 bg-navBg/95 backdrop-blur-md border-b border-gray-800/80 w-full">
+ <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+  <div class="flex items-center justify-between h-16 gap-2 sm:gap-4">
+   <div class="flex items-center gap-4 sm:gap-8">
+    <a href="#" onclick="showHome()" class="tv-focusable flex items-center gap-2 text-brand font-extrabold text-lg sm:text-2xl tracking-wider rounded-lg p-1">
+     <i class="fa-solid fa-circle-play text-xl sm:text-3xl"></i><span>LAKSHIT <span class="text-white">OTT</span></span></a>
+    <div class="hidden md:flex items-center space-x-4 lg:space-x-6 text-sm font-medium text-gray-300">
+     <button onclick="showHome()" class="tv-focusable hover:text-white p-1 rounded-md">Home</button>
+     <button onclick="filterCategory('Action')" class="tv-focusable hover:text-white p-1 rounded-md">Action</button>
+     <button onclick="filterCategory('Sci-Fi')" class="tv-focusable hover:text-white p-1 rounded-md">Sci-Fi</button>
+     <button onclick="filterCategory('Drama')" class="tv-focusable hover:text-white p-1 rounded-md">Drama</button>
+    </div>
+   </div>
+   <div class="flex-1 max-w-xs sm:max-w-md relative">
+    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+    <input id="searchInput" type="text" oninput="handleSearch()" placeholder="Search movies..." class="tv-focusable w-full bg-cardBg border border-gray-800 rounded-full py-2 pl-9 pr-9 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand">
+    <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs w-5 h-5 flex items-center justify-center rounded-full"><i class="fa-solid fa-xmark"></i></button>
+   </div>
+   <div class="flex items-center gap-2 sm:gap-3">
+    <button onclick="toggleSubscriptionModal()" class="tv-focusable bg-gradient-to-r from-brand via-purple-600 to-indigo-600 text-white text-[10px] sm:text-xs font-bold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center gap-1 border border-white/20"><i class="fa-solid fa-crown text-yellow-300"></i> <span class="hidden sm:inline">VIP</span></button>
+    <!-- Admin login button (chhota lock icon) -->
+    <button id="adminBtn" onclick="adminBtnClick()" title="Admin Login" class="tv-focusable w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black flex items-center justify-center border-2 border-yellow-400 shadow-[0_0_12px_rgba(250,204,21,.7)]"><i id="adminIcon" class="fa-solid fa-lock text-yellow-400 text-base sm:text-lg"></i></button>
+   </div>
+  </div>
+ </div>
+</header>
+
+<main class="flex-1 pb-16 w-full">
+ <section id="searchResultsSection" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+  <div class="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
+   <h2 class="text-xl font-bold flex items-center gap-2"><i class="fa-solid fa-magnifying-glass text-brand"></i> Search Results for "<span id="searchQueryTitle" class="text-brand"></span>"</h2>
+   <span id="searchCount" class="text-xs text-gray-400">0 found</span>
+  </div>
+  <div id="searchResultsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4"></div>
+  <div id="noResults" class="hidden text-center py-16"><i class="fa-solid fa-film text-5xl text-gray-700 mb-4"></i><h3 class="text-lg font-bold text-gray-300">No movies found</h3></div>
+ </section>
+
+ <div id="homeContentView" class="w-full">
+  <section class="relative w-full h-[50vh] sm:h-[60vh] min-h-[340px] max-h-[600px] overflow-hidden bg-black mb-6">
+   <img id="heroImage" src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=1600&q=80" class="absolute inset-0 w-full h-full object-cover opacity-60">
+   <div class="absolute inset-0 bg-gradient-to-t from-darkBg via-darkBg/40 to-transparent"></div>
+   <div class="absolute inset-0 bg-gradient-to-r from-darkBg via-darkBg/60 to-transparent"></div>
+   <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-end pb-8 z-10">
+    <div class="max-w-2xl space-y-2 sm:space-y-4">
+     <div class="flex flex-wrap items-center gap-2">
+      <span id="heroTag" class="bg-brand text-white text-[10px] font-extrabold px-2 py-0.5 rounded uppercase">Featured</span>
+      <span class="bg-purple-900/80 text-purple-200 text-[10px] font-semibold px-2 py-0.5 rounded">4K ULTRA HD</span>
+     </div>
+     <h1 id="heroTitle" class="text-2xl sm:text-5xl font-black tracking-tight">Toxic (Blockbuster)</h1>
+     <p id="heroDesc" class="text-xs sm:text-base text-gray-300 line-clamp-2">An action-packed blockbuster thriller featuring high-octane sequences and immersive Dolby Atmos sound.</p>
+     <button onclick="openPlayer(heroId)" class="tv-focusable bg-brand hover:bg-red-700 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl flex items-center gap-2"><i class="fa-solid fa-play"></i> Watch Now</button>
+    </div>
+   </div>
+  </section>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   <h3 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-fire text-brand"></i> Trending Movies & Shows</h3>
+   <div id="allMoviesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4"></div>
+  </div>
+ </div>
+</main>
+
+<!-- Player Modal -->
+<div id="playerModal" class="fixed inset-0 z-50 hidden bg-black/95 flex items-center justify-center p-0 sm:p-4 overflow-y-auto">
+ <div class="w-full max-w-5xl bg-cardBg sm:border border-gray-800 sm:rounded-2xl overflow-hidden shadow-2xl relative my-auto flex flex-col">
+  <button onclick="closePlayerModal()" class="tv-focusable absolute top-3 right-3 z-30 bg-black/70 text-gray-300 hover:bg-brand p-2 rounded-full w-9 h-9 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+  <div class="relative bg-black flex items-center justify-center w-full aspect-video max-h-[70vh]">
+   <video id="mainVideoPlayer" class="tv-focusable w-full h-full aspect-contain" controls playsinline></video>
+  </div>
+  <div class="px-3 sm:px-5 py-3 bg-gray-900/90 border-b border-gray-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+   <div class="flex items-center gap-1.5"><span class="text-gray-400 font-semibold">Aspect:</span>
+    <select id="aspectSelect" onchange="changeAspectRatio(this.value)" class="bg-gray-800 rounded-lg border border-gray-700 px-2 py-1 text-xs"><option value="contain">Fit Aspect</option><option value="cover">Crop / Fill</option><option value="16-9">16:9 Wide</option><option value="4-3">4:3 Standard</option><option value="21-9">21:9 Cinema</option><option value="stretch">Stretch Full</option></select></div>
+   <div class="flex items-center gap-1.5"><span class="text-gray-400 font-semibold">Quality:</span>
+    <select id="qualitySelect" onchange="changeQuality(this.value)" class="bg-gray-800 rounded-lg border border-gray-700 px-2 py-1 text-xs"><option value="420p">420p SD</option><option value="720p">720p HD</option><option value="1080p" selected>1080p Full HD</option><option value="4K">4K Ultra HD</option></select></div>
+   <div class="flex items-center gap-1.5"><span class="text-gray-400 font-semibold">Sound:</span>
+    <select class="bg-gray-800 rounded-lg border border-gray-700 px-2 py-1 text-xs"><option>Dolby Atmos</option><option>5.1 Surround</option><option>Stereo 2.0</option></select></div>
+   <button onclick="document.getElementById('mainVideoPlayer').requestFullscreen()" class="bg-gray-800 hover:bg-gray-700 px-2.5 py-1 rounded-lg border border-gray-700 font-semibold text-xs"><i class="fa-solid fa-expand text-brand"></i> Fullscreen</button>
+  </div>
+  <div class="p-4 sm:p-6 space-y-2">
+   <h2 id="modalPlayerTitle" class="text-lg sm:text-2xl font-black"></h2>
+   <div class="flex items-center gap-3 text-xs text-gray-400"><span id="modalRating" class="text-yellow-400 font-bold"></span><span>•</span><span id="modalYear"></span><span>•</span><span id="modalGenre" class="bg-gray-800 px-2 py-0.5 rounded text-gray-300"></span></div>
+   <p id="modalDescription" class="text-xs sm:text-sm text-gray-300 pt-2 border-t border-gray-800/80"></p>
+  </div>
+ </div>
+</div>
+
+<!-- Admin Upload Modal -->
+<div id="uploadModal" class="fixed inset-0 z-50 hidden bg-black/90 flex items-center justify-center p-4 overflow-y-auto">
+ <div class="w-full max-w-lg bg-cardBg border border-gray-800 rounded-2xl p-5 my-8 space-y-3">
+  <div class="flex items-center justify-between">
+   <h2 class="text-lg font-black"><i class="fa-solid fa-cloud-arrow-up text-brand"></i> Upload Movie</h2>
+   <button onclick="closeUpload()" class="text-gray-400 hover:text-white w-8 h-8 bg-gray-800 rounded-full"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <label class="text-[11px] text-gray-400">Movie File *</label>
+  <input id="upVideo" type="file" accept="video/*" onchange="onPickVideo(this,'upQuality','upMsg')" class="inp">
+  <label class="text-[11px] text-gray-400">Poster Image</label>
+  <input id="upPoster" type="file" accept="image/*" class="inp">
+  <label class="text-[11px] text-gray-400">Movie Name *</label>
+  <input id="upTitle" type="text" placeholder="e.g. Toxic" class="inp">
+  <div class="grid grid-cols-3 gap-2">
+   <div><label class="text-[11px] text-gray-400">Year</label><input id="upYear" type="number" placeholder="2026" class="inp"></div>
+   <div><label class="text-[11px] text-gray-400">Quality</label>
+    <select id="upQuality" class="inp"><option value="420p">420p</option><option value="720p">720p</option><option value="1080p" selected>1080p</option><option value="4K">4K</option></select></div>
+   <div><label class="text-[11px] text-gray-400">Genre</label>
+    <select id="upGenre" class="inp"><option>Action</option><option>Sci-Fi</option><option>Drama</option><option>Comedy</option><option>Thriller</option></select></div>
+  </div>
+  <label class="text-[11px] text-gray-400">Description</label>
+  <textarea id="upDesc" rows="3" class="inp" placeholder="Movie ki story..."></textarea>
+  <p id="upMsg" class="text-xs text-yellow-400 hidden"></p>
+  <div id="upProg" class="hidden space-y-2 bg-gray-900 border border-gray-800 rounded-xl p-3">
+   <div class="flex items-center justify-between text-xs"><span id="upProgText" class="text-gray-300">Uploading in this time:</span><span id="upTimer" class="font-black text-yellow-400 text-base">00:00</span></div>
+   <div class="h-2 bg-gray-800 rounded-full overflow-hidden"><div id="upBar" class="h-full bg-brand" style="width:0%"></div></div>
+  </div>
+  <button id="upAddBtn" onclick="saveMovie()" class="w-full bg-brand hover:bg-red-700 text-white font-bold text-sm py-2.5 rounded-xl">Add Movie</button>
+  <button id="upReloadBtn" onclick="location.reload()" class="hidden w-full bg-green-600 hover:bg-green-500 text-white font-bold text-sm py-2.5 rounded-xl"><i class="fa-solid fa-rotate-right"></i> Reload</button>
+ </div>
+</div>
+
+<!-- Admin Edit Modal -->
+<div id="editModal" class="fixed inset-0 z-50 hidden bg-black/90 flex items-center justify-center p-4 overflow-y-auto">
+ <div class="w-full max-w-lg bg-cardBg border border-gray-800 rounded-2xl p-5 my-8 space-y-3">
+  <div class="flex items-center justify-between">
+   <h2 class="text-lg font-black"><i class="fa-solid fa-pen-to-square text-yellow-400"></i> Edit Movie</h2>
+   <button onclick="closeEdit()" class="text-gray-400 hover:text-white w-8 h-8 bg-gray-800 rounded-full"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div id="edPick" class="space-y-3">
+   <input id="edSearch" type="text" oninput="renderEditList()" placeholder="Movie ka naam likho / chuno..." class="inp">
+   <div id="edList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+  </div>
+  <div id="edForm" class="hidden space-y-3">
+   <label class="text-[11px] text-gray-400">Movie Name *</label>
+   <input id="edTitle" type="text" class="inp">
+   <div class="grid grid-cols-3 gap-2">
+    <div><label class="text-[11px] text-gray-400">Year</label><input id="edYear" type="number" class="inp"></div>
+    <div><label class="text-[11px] text-gray-400">Quality</label>
+     <select id="edQuality" class="inp"><option value="420p">420p</option><option value="720p">720p</option><option value="1080p">1080p</option><option value="4K">4K</option></select></div>
+    <div><label class="text-[11px] text-gray-400">Genre</label>
+     <select id="edGenre" class="inp"><option>Action</option><option>Sci-Fi</option><option>Drama</option><option>Comedy</option><option>Thriller</option></select></div>
+   </div>
+   <label class="text-[11px] text-gray-400">Description</label>
+   <textarea id="edDesc" rows="3" class="inp"></textarea>
+   <label class="text-[11px] text-gray-400">Naya Poster (zaroori nahi)</label>
+   <input id="edPoster" type="file" accept="image/*" class="inp">
+   <label class="text-[11px] text-gray-400">Nayi Movie File (zaroori nahi)</label>
+   <input id="edVideo" type="file" accept="video/*" onchange="onPickVideo(this,'edQuality','edMsg')" class="inp">
+   <p id="edMsg" class="text-xs text-yellow-400 hidden"></p>
+   <div class="flex gap-2">
+    <button onclick="backToPick()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold text-sm py-2.5 rounded-xl">Back</button>
+    <button onclick="updateMovie()" class="flex-1 bg-brand hover:bg-red-700 text-white font-bold text-sm py-2.5 rounded-xl">Update</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- Subscription Modal -->
+<div id="subscriptionModal" class="fixed inset-0 z-50 hidden bg-black/90 flex items-center justify-center p-4 overflow-y-auto">
+ <div class="w-full max-w-4xl bg-cardBg border border-gray-800 rounded-2xl overflow-hidden my-8">
+  <div class="p-6 border-b border-gray-800 flex items-center justify-between">
+   <h2 class="text-2xl font-black"><i class="fa-solid fa-robot text-brand"></i> LAKSHIT OTT <span class="text-brand">Plans</span></h2>
+   <button onclick="toggleSubscriptionModal()" class="text-gray-400 hover:text-white w-8 h-8 bg-gray-800 rounded-full"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="p-6 space-y-6">
+   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <button onclick="selectPreset('free')" class="p-3 rounded-xl border border-gray-800 bg-gray-900/50 text-left"><span class="text-xs font-bold text-gray-400 block">Free Tier</span><span class="text-base font-extrabold">₹0 / month</span><span class="text-[10px] text-gray-500 block">420p SD • With Ads</span></button>
+    <button onclick="selectPreset('hd')" class="p-3 rounded-xl border border-brand/40 bg-brand/10 text-left"><span class="text-xs font-bold text-brand block">Standard HD</span><span class="text-base font-extrabold">₹299 / month</span><span class="text-[10px] text-gray-400 block">1080p • Ad-Free</span></button>
+    <button onclick="selectPreset('ultra')" class="p-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 text-left"><span class="text-xs font-bold text-yellow-400 block">Ultimate 4K VIP</span><span class="text-base font-extrabold">₹599 / month</span><span class="text-[10px] text-gray-300 block">4K • Dolby Atmos</span></button>
+   </div>
+   <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 flex items-center justify-between">
+    <div><span class="text-xs text-gray-400 block">Calculated Total:</span><span id="customTotalPrice" class="text-xl font-black text-brand">₹299 <span class="text-xs text-gray-400 font-normal">/ month</span></span></div>
+    <button onclick="handlePaymentProceed()" class="bg-brand hover:bg-red-700 text-white font-bold text-xs px-6 py-3 rounded-xl">Proceed to Checkout</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<div id="comingSoonModal" class="fixed inset-0 z-50 hidden bg-black/95 flex items-center justify-center p-4">
+ <div class="w-full max-w-2xl bg-gradient-to-br from-gray-900 via-darkBg to-purple-950/80 border border-brand/40 rounded-3xl p-8 text-center space-y-6">
+  <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-brand to-indigo-600 flex items-center justify-center mx-auto animate-bounce"><i class="fa-solid fa-rocket text-3xl"></i></div>
+  <h2 class="text-3xl sm:text-5xl font-black">Coming Soon on 20th November</h2>
+  <p class="text-sm text-gray-300">Our payment gateway is currently under development.</p>
+  <button onclick="document.getElementById('comingSoonModal').classList.add('hidden')" class="bg-gradient-to-r from-brand to-purple-600 font-bold text-sm px-8 py-3 rounded-xl"><i class="fa-solid fa-house"></i> Back to Home Page</button>
+ </div>
+</div>
+
+<div id="qualityAlertModal" class="fixed inset-0 z-50 hidden bg-black/85 flex items-center justify-center p-4">
+ <div class="w-full max-w-md bg-cardBg border border-brand/40 rounded-2xl p-6 text-center space-y-4">
+  <h3 class="text-lg font-bold">Quality Not Available</h3>
+  <p id="qualityAlertText" class="text-sm text-gray-300"></p>
+  <button onclick="document.getElementById('qualityAlertModal').classList.add('hidden')" class="bg-brand font-bold text-xs px-8 py-2.5 rounded-xl">OK</button>
+ </div>
+</div>
+
+<script>
+// ====== ADMIN PASSWORD — ise apna khud ka password bana kar badal lo ======
+const ADMIN_PASSWORD = 'lakshit123';
+
+const moviesDatabase = [
+ {id:'toxic-2026',title:'Toxic',genre:'Action',rating:'9.2',year:'2026',description:'An action-packed blockbuster thriller featuring high-octane sequences and immersive Dolby Atmos sound.',poster:'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80',sources:{'420p':'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4','720p':'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4','1080p':'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4'}},
+ {id:'dhurandhar-the-revenge-2026',title:'Dhurandhar the revenge',genre:'Action',rating:'9.5',year:'2026',description:"Driven by personal tragedy, Hamza dives deeper into his deep-cover mission to ruin Pakistan's criminal underworld in this unseen sequel to Dhurandhar.",poster:'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=800&q=80',sources:{'420p':'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4','720p':'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4','1080p':'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4','4K':'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'}}
+];
+let currentMovie=null;
+
+// ====== IndexedDB (uploaded movies yahan save hoti hain) ======
+function db(){return new Promise((res,rej)=>{const r=indexedDB.open('lakshitOTT',1);r.onupgradeneeded=()=>r.result.createObjectStore('movies',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function dbPut(m){const d=await db();return new Promise((res,rej)=>{const t=d.transaction('movies','readwrite');t.objectStore('movies').put(m);t.oncomplete=res;t.onerror=()=>rej(t.error);});}
+async function dbAll(){const d=await db();return new Promise((res,rej)=>{const q=d.transaction('movies').objectStore('movies').getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});}
+
+async function dbDelete(id){const d=await db();return new Promise((res,rej)=>{const t=d.transaction('movies','readwrite');t.objectStore('movies').delete(id);t.oncomplete=res;t.onerror=()=>rej(t.error);});}
+const norm=s=>(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+function guessType(n){n=(n||'').toLowerCase();if(n.endsWith('.webm'))return'video/webm';if(n.endsWith('.mkv'))return'video/x-matroska';if(n.endsWith('.mov'))return'video/quicktime';return'video/mp4';}
+// File ki poori copy browser ke andar rakhte hain (tukdon mein, badi 4K file ke liye bhi) taaki reload ke baad bhi chale
+async function keep(f,defType,onProg){
+ const type=f.type||(defType||guessType(f.name));
+ const parts=[],C=16*1024*1024;
+ try{
+  for(let o=0;o<f.size;o+=C){parts.push(new Blob([await f.slice(o,o+C).arrayBuffer()]));if(onProg)onProg(Math.min(o+C,f.size)/f.size);}
+  return new Blob(parts,{type});
+ }catch(e){return f;}
+}
+// File chunte hi check: browser ye video chala sakta hai ya nahi + resolution (4K detect)
+function probe(file){
+ return new Promise(res=>{
+  const v=document.createElement('video'),u=URL.createObjectURL(file);let done=false;
+  const fin=r=>{if(done)return;done=true;URL.revokeObjectURL(u);res(r);};
+  v.preload='metadata';v.muted=true;
+  v.onloadedmetadata=()=>fin(v.videoWidth>0?{ok:true,w:v.videoWidth,h:v.videoHeight}:{ok:false});
+  v.onerror=()=>fin({ok:false});
+  setTimeout(()=>fin({ok:null}),10000);
+  v.src=u;
+ });
+}
+async function onPickVideo(inp,qSel,msgId){
+ const f=inp.files[0],msg=document.getElementById(msgId);if(!f)return;
+ msg.classList.remove('hidden');msg.textContent='Video check ho raha hai...';
+ const r=await probe(f);
+ if(r.ok===true){
+  const q=r.h>=2000?'4K':r.h>=1000?'1080p':r.h>=700?'720p':'420p';
+  document.getElementById(qSel).value=q;
+  msg.textContent='✅ Ye video chalega — '+r.w+'×'+r.h+' ('+q+' chuni gayi)';
+ }else if(r.ok===false){
+  msg.textContent='⚠️ Ye video format/codec is browser mein nahi chalega (shayad HEVC/H.265 ya 10-bit/HDR). Isse H.264 MP4 mein convert karke upload karo.';
+ }else{
+  msg.textContent='Video check poora nahi ho paya. Upload karke dekh sakte ho.';
+ }
+}
+function toEntry(r){
+ const s={};s[r.quality]=URL.createObjectURL(r.video);
+ return {id:r.id,title:r.title,genre:r.genre,rating:'New',uploaded:true,ts:r.ts||0,year:r.year||'',description:r.description||'',poster:r.poster?URL.createObjectURL(r.poster):'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=800&q=80',sources:s};
+}
+
+document.addEventListener('DOMContentLoaded',async()=>{
+ try{localStorage.removeItem('lakshitAdmin');}catch(e){}
+ await reloadUploaded();
+ renderHome();
+ applyAdminUI();
+});
+
+let heroId='toxic-2026';
+const DEFAULT_HERO={t:'Toxic (Blockbuster)',d:'An action-packed blockbuster thriller featuring high-octane sequences and immersive Dolby Atmos sound.',img:'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=1600&q=80'};
+async function reloadUploaded(){
+ for(let i=moviesDatabase.length-1;i>=0;i--)if(moviesDatabase[i].uploaded)moviesDatabase.splice(i,1);
+ try{
+  const all=(await dbAll()).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const seen=new Set(),list=[];
+  for(const r of all){const k=norm(r.title);if(seen.has(k)){await dbDelete(r.id);}else{seen.add(k);list.push(r);}}
+  list.reverse().forEach(r=>moviesDatabase.unshift(toEntry(r)));
+ }catch(e){}
+}
+// Ek naam ki ek hi movie dikhti hai (uploaded wali pehle, phir purani)
+function visibleMovies(){const seen=new Set();return moviesDatabase.filter(m=>{const k=norm(m.title);if(seen.has(k))return false;seen.add(k);return true;});}
+// Har movie sirf ek baar: banner mein jo hai wo neeche grid mein nahi aata
+function renderHome(){
+ const vis=visibleMovies();
+ const h=vis.find(m=>m.uploaded);
+ heroId=h?h.id:'toxic-2026';
+ renderMovies(vis.filter(m=>m.id!==heroId),'allMoviesGrid');
+ document.getElementById('heroTitle').textContent=h?h.title:DEFAULT_HERO.t;
+ document.getElementById('heroDesc').textContent=h?(h.description||''):DEFAULT_HERO.d;
+ document.getElementById('heroImage').src=h?h.poster:DEFAULT_HERO.img;
+ document.getElementById('heroTag').textContent=h?'Just Added':'Featured';
+}
+function renderMovies(movies,id){
+ document.getElementById(id).innerHTML=movies.map(m=>`
+ <div onclick="openPlayer('${m.id}')" tabindex="0" class="tv-focusable bg-cardBg rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition-transform border border-gray-800/80 group">
+  <div class="relative aspect-[2/3] overflow-hidden"><img src="${m.poster}" alt="" class="w-full h-full object-cover">
+   <div class="absolute top-2 right-2 bg-black/70 px-2 py-0.5 rounded text-yellow-400 font-bold text-xs"><i class="fa-solid fa-star"></i> ${m.rating}</div></div>
+  <div class="p-3"><h4 class="font-bold text-sm truncate"></h4>
+   <div class="flex justify-between mt-1 text-[11px] text-gray-400"><span>${m.genre}</span><span>${m.year}</span></div>
+   <p class="text-[11px] text-gray-400 mt-2 line-clamp-2"></p></div>
+ </div>`).join('');
+ // title/description ko textContent se daalte hain (safe)
+ const cards=document.getElementById(id).children;
+ movies.forEach((m,i)=>{cards[i].querySelector('h4').textContent=m.title;cards[i].querySelector('p').textContent=m.description;});
+}
+
+// ====== Search: movie ka naam likhte hi mil jaayegi ======
+function handleSearch(){
+ const q=document.getElementById('searchInput').value.trim().toLowerCase();
+ const sec=document.getElementById('searchResultsSection'),home=document.getElementById('homeContentView');
+ if(!q){clearSearch();return;}
+ document.getElementById('clearSearchBtn').classList.remove('hidden');
+ home.classList.add('hidden');sec.classList.remove('hidden');
+ document.getElementById('searchQueryTitle').textContent=q;
+ const f=visibleMovies().filter(m=>m.title.toLowerCase().includes(q)||m.genre.toLowerCase().includes(q)||m.description.toLowerCase().includes(q));
+ document.getElementById('searchCount').textContent=f.length+' found';
+ const g=document.getElementById('searchResultsGrid'),n=document.getElementById('noResults');
+ if(f.length){n.classList.add('hidden');g.classList.remove('hidden');renderMovies(f,'searchResultsGrid');}else{g.classList.add('hidden');n.classList.remove('hidden');}
+}
+function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('clearSearchBtn').classList.add('hidden');document.getElementById('searchResultsSection').classList.add('hidden');document.getElementById('homeContentView').classList.remove('hidden');}
+function showHome(){clearSearch();}
+function filterCategory(c){document.getElementById('searchInput').value=c;handleSearch();}
+
+// ====== Player ======
+function openPlayer(id){
+ const m=moviesDatabase.find(x=>x.id===id);if(!m)return;currentMovie=m;
+ document.getElementById('modalPlayerTitle').textContent=m.title;
+ document.getElementById('modalRating').innerHTML='<i class="fa-solid fa-star"></i> '+m.rating;
+ document.getElementById('modalYear').textContent=m.year;
+ document.getElementById('modalGenre').textContent=m.genre;
+ document.getElementById('modalDescription').textContent=m.description;
+ const p=document.getElementById('mainVideoPlayer');
+ const q=m.sources['1080p']?'1080p':Object.keys(m.sources)[0];
+ document.getElementById('qualitySelect').value=q;
+ document.getElementById('aspectSelect').value='contain';changeAspectRatio('contain');
+ p.onerror=()=>{document.getElementById('qualityAlertText').textContent='Ye video is browser mein nahi chal paayi. Aksar 4K file HEVC/H.265 ya 10-bit/HDR codec mein hoti hai jo browser nahi chalata. Isse H.264 MP4 mein convert karo (ya Edge/Safari mein kholo).';document.getElementById('qualityAlertModal').classList.remove('hidden');};
+ p.src=m.sources[q];p.load();
+ document.getElementById('playerModal').classList.remove('hidden');p.play().catch(()=>{});
+}
+function closePlayerModal(){const v=document.getElementById('mainVideoPlayer');v.pause();document.getElementById('playerModal').classList.add('hidden');}
+function changeQuality(q){
+ if(!currentMovie)return;
+ const p=document.getElementById('mainVideoPlayer');
+ if(currentMovie.sources[q]){const t=p.currentTime;p.src=currentMovie.sources[q];p.load();p.currentTime=t;p.play().catch(()=>{});}
+ else{
+  const avail=Object.keys(currentMovie.sources)[0];
+  document.getElementById('qualityAlertText').textContent=`Sorry, ${q} is not available for "${currentMovie.title}". Playing available quality (${avail}).`;
+  document.getElementById('qualityAlertModal').classList.remove('hidden');
+  document.getElementById('qualitySelect').value=avail;
+ }
+}
+function changeAspectRatio(r){document.getElementById('mainVideoPlayer').className='tv-focusable w-full h-full transition-all duration-200 aspect-'+r;}
+
+// ====== Subscription ======
+function toggleSubscriptionModal(){document.getElementById('subscriptionModal').classList.toggle('hidden');}
+function selectPreset(t){const p={free:'₹0',hd:'₹299',ultra:'₹599'};document.getElementById('customTotalPrice').innerHTML=p[t]+' <span class="text-xs text-gray-400 font-normal">/ month</span>';}
+function handlePaymentProceed(){toggleSubscriptionModal();document.getElementById('comingSoonModal').classList.remove('hidden');}
+
+// ====== Admin ======
+let adminOn=false; // page reload hote hi ताला wapas lag jaata hai
+const isAdmin=()=>adminOn;
+function applyAdminUI(){
+ const on=isAdmin();
+ document.getElementById('adminPanel').classList.toggle('hidden',!on);
+ document.getElementById('adminIcon').className='fa-solid text-yellow-400 text-base sm:text-lg '+(on?'fa-lock-open':'fa-lock');
+}
+function adminBtnClick(){
+ if(isAdmin()){document.getElementById('adminPanel').classList.toggle('hidden');return;}
+ const p=prompt('Admin password daalo:');
+ if(p===null)return;
+ if(p===ADMIN_PASSWORD){adminOn=true;applyAdminUI();}else alert('Galat password!');
+}
+function adminLogout(){adminOn=false;applyAdminUI();}
+let upDone=false,timerId=null;
+function openUpload(){
+ upDone=false;busy=false;
+ document.getElementById('upMsg').classList.add('hidden');
+ document.getElementById('upProg').classList.add('hidden');
+ document.getElementById('upReloadBtn').classList.add('hidden');
+ document.getElementById('upAddBtn').classList.remove('hidden');
+ document.getElementById('uploadModal').classList.remove('hidden');
+}
+function closeUpload(){document.getElementById('uploadModal').classList.add('hidden');if(upDone)location.reload();}
+const fmtT=t=>String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+let busy=false;
+async function saveMovie(){
+ if(!isAdmin()||busy)return;
+ const v=document.getElementById('upVideo').files[0],po=document.getElementById('upPoster').files[0];
+ const title=document.getElementById('upTitle').value.trim(),msg=document.getElementById('upMsg');
+ msg.classList.remove('hidden');
+ if(!v||!title){msg.textContent='Movie file aur naam zaroori hai.';return;}
+ busy=true;msg.classList.add('hidden');
+ const prog=document.getElementById('upProg'),txt=document.getElementById('upProgText'),bar=document.getElementById('upBar'),tm=document.getElementById('upTimer');
+ prog.classList.remove('hidden');document.getElementById('upAddBtn').classList.add('hidden');
+ txt.textContent='Uploading in this time:';bar.style.width='0%';
+ const t0=Date.now();tm.textContent='00:00';
+ timerId=setInterval(()=>{tm.textContent=fmtT(Math.floor((Date.now()-t0)/1000));},500);
+ try{
+  const video=await keep(v,null,f=>{bar.style.width=Math.round(f*100)+'%';txt.textContent='Uploading '+Math.round(f*100)+'% — in this time:';});
+  const poster=po?await keep(po,'image/jpeg'):null;
+  txt.textContent='Saving... in this time:';
+  const rec={id:'up-'+Date.now(),title,year:document.getElementById('upYear').value,quality:document.getElementById('upQuality').value,genre:document.getElementById('upGenre').value,description:document.getElementById('upDesc').value.trim(),video,poster,ts:Date.now()};
+  // same naam ki purani movie ho to uski jagah ye nayi aa jaayegi (duplicate nahi banega)
+  for(const o of await dbAll()){if(norm(o.title)===norm(title))await dbDelete(o.id);}
+  await dbPut(rec);
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
+  clearInterval(timerId);
+  bar.style.width='100%';
+  tm.textContent=fmtT(Math.floor((Date.now()-t0)/1000));
+  txt.textContent='✅ Upload complete! Time laga:';
+  upDone=true;busy=false;
+  document.getElementById('upReloadBtn').classList.remove('hidden');
+ }catch(e){
+  clearInterval(timerId);busy=false;prog.classList.add('hidden');
+  document.getElementById('upAddBtn').classList.remove('hidden');
+  msg.classList.remove('hidden');msg.textContent='Save nahi hua: '+(e&&e.message?e.message:e);
+ }
+}
+
+// ====== Edit Movie ======
+let edId=null;
+function openEdit(){document.getElementById('edSearch').value='';backToPick();document.getElementById('editModal').classList.remove('hidden');}
+function closeEdit(){document.getElementById('editModal').classList.add('hidden');}
+function backToPick(){edId=null;document.getElementById('edForm').classList.add('hidden');document.getElementById('edPick').classList.remove('hidden');renderEditList();}
+function renderEditList(){
+ const q=document.getElementById('edSearch').value.trim().toLowerCase();
+ const list=moviesDatabase.filter(m=>m.uploaded&&m.title.toLowerCase().includes(q));
+ const box=document.getElementById('edList');box.innerHTML='';
+ if(!list.length){box.innerHTML='<p class="text-xs text-gray-500">Koi uploaded movie nahi mili.</p>';return;}
+ list.forEach(m=>{
+  const b=document.createElement('button');
+  b.className='w-full flex items-center gap-3 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-xl p-2 text-left';
+  b.innerHTML='<img class="w-10 h-14 object-cover rounded"><span class="text-sm font-bold truncate"></span>';
+  b.querySelector('img').src=m.poster;b.querySelector('span').textContent=m.title;
+  b.onclick=()=>pickEdit(m.id);box.appendChild(b);
+ });
+}
+async function pickEdit(id){
+ const r=(await dbAll()).find(x=>x.id===id);if(!r)return;
+ edId=id;
+ document.getElementById('edTitle').value=r.title;
+ document.getElementById('edYear').value=r.year||'';
+ document.getElementById('edQuality').value=r.quality;
+ document.getElementById('edGenre').value=r.genre;
+ document.getElementById('edDesc').value=r.description||'';
+ document.getElementById('edPoster').value='';document.getElementById('edVideo').value='';
+ document.getElementById('edMsg').classList.add('hidden');
+ document.getElementById('edPick').classList.add('hidden');
+ document.getElementById('edForm').classList.remove('hidden');
+}
+async function updateMovie(){
+ if(!isAdmin()||!edId||busy)return;
+ const msg=document.getElementById('edMsg');msg.classList.remove('hidden');
+ const title=document.getElementById('edTitle').value.trim();
+ if(!title){msg.textContent='Movie ka naam zaroori hai.';return;}
+ busy=true;msg.textContent='Updating...';
+ try{
+  const r=(await dbAll()).find(x=>x.id===edId);
+  r.title=title;
+  r.year=document.getElementById('edYear').value;
+  r.quality=document.getElementById('edQuality').value;
+  r.genre=document.getElementById('edGenre').value;
+  r.description=document.getElementById('edDesc').value.trim();
+  const np=document.getElementById('edPoster').files[0],nv=document.getElementById('edVideo').files[0];
+  if(np)r.poster=await keep(np,'image/jpeg');if(nv)r.video=await keep(nv);
+  for(const o of await dbAll()){if(o.id!==edId&&norm(o.title)===norm(title))await dbDelete(o.id);}
+  await dbPut(r);
+  location.reload();
+ }catch(e){busy=false;msg.textContent='Update nahi hua: '+e.message;}
+}
+</script>
+</body>
+</html>
